@@ -1,8 +1,9 @@
-use std::{error, fs, path};
+use std::{error, fs, path as file_path};
 
 use config::Config;
 
 pub mod config;
+pub mod path;
 
 pub fn run(config: Config) -> Result<(), Box<dyn error::Error>> {
     for file_path in config.get_target_files()? {
@@ -17,32 +18,32 @@ pub fn run(config: Config) -> Result<(), Box<dyn error::Error>> {
 fn move_path(
     delta_x: f64,
     delta_y: f64,
-    file_path: &path::PathBuf,
+    file_path: &file_path::PathBuf,
 ) -> Result<(), Box<dyn error::Error>> {
     let contents = fs::read_to_string(file_path)?;
 
     let mut lines: Vec<String> = contents.lines().map(|line| line.to_owned()).collect();
 
     for line in &mut lines {
-        if line.contains("\"y\": ") {
-            let current_y = line
-                .trim()
-                .strip_prefix("\"y\": ")
-                .ok_or("can't find y in y line")?
-                .parse::<f64>()?;
-
-            *line = format!("        \"y\": {}", current_y + delta_y);
-        } else if line.contains("\"x\": ") {
-            let current_x = line
-                .trim()
-                .strip_prefix("\"x\": ")
-                .ok_or("can't find x in x line")?
-                .strip_suffix(",")
-                .ok_or("x line doesn't end in comma")?
-                .parse::<f64>()?;
-
-            *line = format!("        \"x\": {},", current_x + delta_x);
+        if let Some(text) = line.trim().strip_prefix("\"y\": ") {
+            *line = format!("        \"y\": {}", text.parse::<f64>()? + delta_y);
         };
+
+		if let Some(init_text) = line.trim().strip_prefix("\"x\": ") {
+			if let Some(text) = init_text.strip_suffix(",") {
+            	*line = format!("        \"x\": {}", text.parse::<f64>()? + delta_y);
+			}
+        };
+
+        let current_x = line
+            .trim()
+            .strip_prefix("\"x\": ")
+            .ok_or("can't find x in x line")?
+            .strip_suffix(",")
+            .ok_or("x line doesn't end in comma")?
+            .parse::<f64>()?;
+
+        *line = format!("        \"x\": {},", current_x + delta_x);
 
         (*line).push('\n');
     }
@@ -52,7 +53,7 @@ fn move_path(
     Ok(())
 }
 
-fn get_path_angle(file_path: &path::PathBuf) -> Result<f64, Box<dyn error::Error>> {
+fn get_path_angle(file_path: &file_path::PathBuf) -> Result<f64, Box<dyn error::Error>> {
     let contents = fs::read_to_string(file_path)?;
 
     let path_angle = contents
@@ -86,7 +87,7 @@ mod tests {
 
     #[test]
     fn rotation_parsing() {
-        assert_eq!(get_path_angle(&path::PathBuf::from("C:\\Users\\acfro\\Github\\2025Reefscape\\src\\main\\deploy\\pathplanner\\paths\\ra.path")).unwrap(), 90.0);
+        assert_eq!(get_path_angle(&file_path::PathBuf::from("C:\\Users\\acfro\\Github\\2025Reefscape\\src\\main\\deploy\\pathplanner\\paths\\ra.path")).unwrap(), 90.0);
     }
 
     #[test]
