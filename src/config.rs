@@ -31,11 +31,11 @@ impl Config {
             .parse()
             .unwrap_or(0.0);
 
-        let sideways = args
-            .next()
-            .ok_or("didn't get a sideways input")?
-            .parse()
-            .unwrap_or(false);
+        let sideways = if let Some(sideways_input) = args.next() {
+            sideways_input.parse().unwrap_or(false)
+        } else {
+            false
+        };
 
         Ok(Config {
             folder_filepath,
