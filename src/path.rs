@@ -6,11 +6,13 @@ use serde_json::Value;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Path {
+    version: String,
     pub waypoints: Vec<Waypoint>,
-    pub goal_end_state: State,
-
     #[serde(flatten)]
-    extra: HashMap<String, Value>,
+    zones_and_constraints: HashMap<String, Value>,
+    pub goal_end_state: State,
+    #[serde(flatten)]
+    start_state_misc: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize)]

@@ -54,7 +54,13 @@ impl Config {
                     .iter()
                     .any(|target_path| pathbuf_filename(path).starts_with(target_path))
             })
-            .map(|path| OpenOptions::new().write(true).open(path).unwrap())
+            .map(|path| {
+                OpenOptions::new()
+                    .write(true)
+                    .read(true)
+                    .open(path)
+                    .unwrap()
+            })
             .collect();
 
         Ok(files)

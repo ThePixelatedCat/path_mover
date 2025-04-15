@@ -1,6 +1,6 @@
 use std::{
     error,
-    io,
+    io::{self, Seek},
 };
 
 use config::Config;
@@ -10,15 +10,17 @@ pub mod config;
 pub mod path;
 
 pub fn run(config: Config) -> Result<(), Box<dyn error::Error>> {
-    for file in config.get_target_files()? {
-        let mut path: Path = serde_json::from_reader(io::BufReader::new(&file)).unwrap();
+    for mut file in config.get_target_files()? {
+        let mut path: Path = serde_json::from_reader(io::BufReader::new(&file))?;
         let (delta_x, delta_y) = rr_to_field(
             &config.amount,
             path.goal_end_state.rotation,
             config.sideways,
         );
         path = move_path(delta_x, delta_y, path)?;
-        serde_json::to_writer(file, &path)?;
+        file.rewind()?;
+        file.set_len(0)?;
+        serde_json::to_writer_pretty(file, &path)?;
     }
 
     Ok(())
