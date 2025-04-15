@@ -1,5 +1,5 @@
 use std::{
-    env, error,
+    error,
     fs::{self, OpenOptions},
     path,
 };
@@ -15,8 +15,7 @@ impl Config {
     pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
         args.next();
 
-        let folder_filepath = env::var("FOLDER_FILEPATH")
-            .map_err(|_err| "please set path folder filepath environment variable")?;
+        let folder_filepath = "src\\main\\deploy\\pathplanner\\paths".to_owned();
 
         let target_path = args
             .next()
