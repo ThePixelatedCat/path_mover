@@ -1,71 +1,46 @@
-use std::{error, fs, path as file_path};
+use std::{
+    error,
+    io,
+};
 
 use config::Config;
+use path::Path;
 
 pub mod config;
 pub mod path;
 
 pub fn run(config: Config) -> Result<(), Box<dyn error::Error>> {
-    for file_path in config.get_target_files()? {
-        let (delta_x, delta_y) =
-            rr_to_field(&config.amount, get_path_angle(&file_path)?, config.sideways);
-        move_path(delta_x, delta_y, &file_path)?;
+    for file in config.get_target_files()? {
+        let mut path: Path = serde_json::from_reader(io::BufReader::new(&file)).unwrap();
+        let (delta_x, delta_y) = rr_to_field(
+            &config.amount,
+            path.goal_end_state.rotation,
+            config.sideways,
+        );
+        path = move_path(delta_x, delta_y, path)?;
+        serde_json::to_writer(file, &path)?;
     }
 
     Ok(())
 }
 
-fn move_path(
-    delta_x: f64,
-    delta_y: f64,
-    file_path: &file_path::PathBuf,
-) -> Result<(), Box<dyn error::Error>> {
-    let contents = fs::read_to_string(file_path)?;
+fn move_path(delta_x: f64, delta_y: f64, mut path: Path) -> Result<Path, Box<dyn error::Error>> {
+    for waypoint in &mut path.waypoints {
+        waypoint.anchor.x += delta_x;
+        waypoint.anchor.y += delta_y;
 
-    let mut lines: Vec<String> = contents.lines().map(|line| line.to_owned()).collect();
+        if let Some(point) = &mut waypoint.prev_control {
+            point.x += delta_x;
+            point.y += delta_y;
+        }
 
-    for line in &mut lines {
-        if let Some(text) = line.trim().strip_prefix("\"y\": ") {
-            *line = format!("        \"y\": {}", text.parse::<f64>()? + delta_y);
-        };
-
-		if let Some(init_text) = line.trim().strip_prefix("\"x\": ") {
-			if let Some(text) = init_text.strip_suffix(",") {
-            	*line = format!("        \"x\": {}", text.parse::<f64>()? + delta_y);
-			}
-        };
-
-        let current_x = line
-            .trim()
-            .strip_prefix("\"x\": ")
-            .ok_or("can't find x in x line")?
-            .strip_suffix(",")
-            .ok_or("x line doesn't end in comma")?
-            .parse::<f64>()?;
-
-        *line = format!("        \"x\": {},", current_x + delta_x);
-
-        (*line).push('\n');
+        if let Some(point) = &mut waypoint.next_control {
+            point.x += delta_x;
+            point.y += delta_y;
+        }
     }
 
-    fs::write(file_path, lines.concat())?;
-
-    Ok(())
-}
-
-fn get_path_angle(file_path: &file_path::PathBuf) -> Result<f64, Box<dyn error::Error>> {
-    let contents = fs::read_to_string(file_path)?;
-
-    let path_angle = contents
-        .lines()
-        .find(|line| line.contains("\"rotation\":"))
-        .ok_or("can't find rotation in path")?
-        .trim()
-        .strip_prefix("\"rotation\": ")
-        .ok_or("can't find rotation in rotation line")?
-        .parse()?;
-
-    Ok(path_angle)
+    Ok(path)
 }
 
 fn rr_to_field(distance: &f64, robot_angle: f64, sideways: bool) -> (f64, f64) {
@@ -84,11 +59,6 @@ fn rr_to_field(distance: &f64, robot_angle: f64, sideways: bool) -> (f64, f64) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn rotation_parsing() {
-        assert_eq!(get_path_angle(&file_path::PathBuf::from("C:\\Users\\acfro\\Github\\2025Reefscape\\src\\main\\deploy\\pathplanner\\paths\\ra.path")).unwrap(), 90.0);
-    }
 
     #[test]
     fn zero_fore_pos() {

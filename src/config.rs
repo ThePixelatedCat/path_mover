@@ -1,4 +1,8 @@
-use std::{env, error, fs, path};
+use std::{
+    env, error,
+    fs::{self, OpenOptions},
+    path,
+};
 
 pub struct Config {
     pub folder_filepath: String,
@@ -41,23 +45,22 @@ impl Config {
         })
     }
 
-    pub fn get_target_files(&self) -> Result<Vec<path::PathBuf>, Box<dyn error::Error>> {
-        let mut file_paths = vec![];
-
-        for result in fs::read_dir(&self.folder_filepath)? {
-            let entry = result?;
-
-            if let Ok(file_path) = entry.file_name().into_string() {
-                if self
-                    .target_paths
+    pub fn get_target_files(&self) -> Result<Vec<fs::File>, Box<dyn error::Error>> {
+        let files = fs::read_dir(&self.folder_filepath)?
+            .map(|path| path.unwrap().path())
+            .filter(|path| path.is_file())
+            .filter(|path| {
+                self.target_paths
                     .iter()
-                    .any(|target_path| file_path.starts_with(target_path))
-                {
-                    file_paths.push(entry.path());
-                }
-            }
-        }
+                    .any(|target_path| pathbuf_filename(path).starts_with(target_path))
+            })
+            .map(|path| OpenOptions::new().write(true).open(path).unwrap())
+            .collect();
 
-        Ok(file_paths)
+        Ok(files)
     }
+}
+
+fn pathbuf_filename(pathbuf: &path::Path) -> &str {
+    pathbuf.file_name().unwrap().to_str().unwrap()
 }

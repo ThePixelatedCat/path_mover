@@ -6,25 +6,33 @@ use serde_json::Value;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Path {
-	waypoints: Vec<Waypoint>,
+    pub waypoints: Vec<Waypoint>,
+    pub goal_end_state: State,
 
-	#[serde(flatten)]
+    #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Waypoint {
-	anchor: Point,
-	prev_control: Option<Point>,
-	next_control: Option<Point>,
-	is_locked: bool,
-	linked_name: Option<String>,
+pub struct Waypoint {
+    pub anchor: Point,
+    pub prev_control: Option<Point>,
+    pub next_control: Option<Point>,
+    is_locked: bool,
+    linked_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Point {
-	x: f64,
-	y: f64,
+pub struct State {
+    velocity: f64,
+    pub rotation: f64,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
 }
