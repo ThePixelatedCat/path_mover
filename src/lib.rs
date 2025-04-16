@@ -1,6 +1,6 @@
 use std::{
-    error,
-    io::{self, Seek},
+    error::Error,
+    io::{BufReader, Seek},
 };
 
 use config::Config;
@@ -9,9 +9,9 @@ use path::Path;
 pub mod config;
 pub mod path;
 
-pub fn run(config: Config) -> Result<(), Box<dyn error::Error>> {
+pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     for mut file in config.get_target_files()? {
-        let mut path: Path = serde_json::from_reader(io::BufReader::new(&file))?;
+        let mut path: Path = serde_json::from_reader(BufReader::new(&file))?;
         let (delta_x, delta_y) = rr_to_field(
             &config.amount,
             path.goal_end_state.rotation,
@@ -26,7 +26,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn error::Error>> {
     Ok(())
 }
 
-fn move_path(delta_x: f64, delta_y: f64, mut path: Path) -> Result<Path, Box<dyn error::Error>> {
+fn move_path(delta_x: f64, delta_y: f64, mut path: Path) -> Result<Path, Box<dyn Error>> {
     for waypoint in &mut path.waypoints {
         waypoint.anchor.x += delta_x;
         waypoint.anchor.y += delta_y;

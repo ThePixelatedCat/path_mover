@@ -1,7 +1,8 @@
 use std::{
-    env, error,
-    fs::{self, OpenOptions},
-    path,
+    env,
+    error::Error,
+    fs::{self, File, OpenOptions},
+    path::Path,
 };
 
 pub struct Config {
@@ -45,8 +46,8 @@ impl Config {
         })
     }
 
-    pub fn get_target_files(&self) -> Result<Vec<fs::File>, Box<dyn error::Error>> {
-        let files: Vec<fs::File> = fs::read_dir(&self.folder_filepath)?
+    pub fn get_target_files(&self) -> Result<Vec<File>, Box<dyn Error>> {
+        let files: Vec<File> = fs::read_dir(&self.folder_filepath)?
             .map(|path| path.unwrap().path())
             .filter(|path| path.is_file())
             .filter(|path| {
@@ -62,16 +63,15 @@ impl Config {
                     .unwrap()
             })
             .collect();
- 
-        if files.len() > 0 {
-            Ok(files)
-        } else {
-            Err("no path files match the input strings".into())
-        }
 
+        if files.is_empty() {
+            Err("no path files match the input strings".into())
+        } else {
+            Ok(files)
+        }
     }
 }
 
-fn pathbuf_filename(pathbuf: &path::Path) -> &str {
+fn pathbuf_filename(pathbuf: &Path) -> &str {
     pathbuf.file_name().unwrap().to_str().unwrap()
 }
