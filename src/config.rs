@@ -2,7 +2,6 @@ use std::{
     env,
     error::Error,
     fs::{self, File, OpenOptions},
-    path::Path,
 };
 
 pub struct Config {
@@ -47,22 +46,27 @@ impl Config {
     }
 
     pub fn get_target_files(&self) -> Result<Vec<File>, Box<dyn Error>> {
-        let files: Vec<File> = fs::read_dir(&self.folder_filepath)?
-            .map(|path| path.unwrap().path())
-            .filter(|path| path.is_file())
-            .filter(|path| {
-                self.target_paths
-                    .iter()
-                    .any(|target_path| pathbuf_filename(path).starts_with(target_path))
-            })
-            .map(|path| {
-                OpenOptions::new()
-                    .write(true)
-                    .read(true)
-                    .open(path)
-                    .unwrap()
-            })
-            .collect();
+        let mut files = vec![];
+
+        for entry in (fs::read_dir(&self.folder_filepath)?).flatten() {
+            let path = entry.path();
+
+            if path.is_file() {
+                if let Some(name) = path.file_name() {
+                    if let Some(name) = name.to_str() {
+                        if self
+                            .target_paths
+                            .iter()
+                            .any(|target_path| name.starts_with(target_path))
+                        {
+                            if let Ok(file) = OpenOptions::new().write(true).read(true).open(path) {
+                                files.push(file);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if files.is_empty() {
             Err("no path files match the input strings".into())
@@ -70,8 +74,4 @@ impl Config {
             Ok(files)
         }
     }
-}
-
-fn pathbuf_filename(pathbuf: &Path) -> &str {
-    pathbuf.file_name().unwrap().to_str().unwrap()
 }

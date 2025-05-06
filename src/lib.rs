@@ -86,25 +86,25 @@ mod tests {
         assert_eq!(rr_to_field(&-1.0, 0.0, true).1, -1.0);
     }
 
-    //#[test]
+    #[test]
     fn ninety_fore_pos() {
         assert_eq!(rr_to_field(&1.0, 90.0, false).0, 0.0);
         assert_eq!(rr_to_field(&1.0, 90.0, false).1, 1.0);
     }
 
-    //#[test]
+    #[test]
     fn ninety_fore_neg() {
         assert_eq!(rr_to_field(&-1.0, 90.0, false).0, 0.0);
         assert_eq!(rr_to_field(&-1.0, 90.0, false).1, -1.0);
     }
 
-    //#[test]
+    #[test]
     fn ninety_side_pos() {
         assert_eq!(rr_to_field(&1.0, 90.0, true).0, 1.0);
         assert_eq!(rr_to_field(&1.0, 90.0, true).1, 0.0);
     }
 
-    //#[test]
+    #[test]
     fn ninety_side_neg() {
         assert_eq!(rr_to_field(&-1.0, 90.0, true).0, -1.0);
         assert_eq!(rr_to_field(&-1.0, 90.0, true).1, 0.0);
